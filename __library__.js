@@ -9,6 +9,7 @@ new function ALL(data) {
 var library = {};
 
 alert('test');
+
 // 1.申请权限
 /* @ morePermissions {boolean}
  *     {true} 开启更多权限
