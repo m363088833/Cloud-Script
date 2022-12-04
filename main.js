@@ -80,9 +80,12 @@ function 更新_js文件(url, path) {
         let data = http.get(url).body.string(); //http请求
         if (path == undefined) {
             var path = files.join(storage.get("手机默认文件夹路径"), fileName);
+alert(path);
         }
         files.ensureDir(path); //确保路径中的文件夹存在
         files.write(path, data); //保存文件
         toastLog(fileName + "已更新：" + path);
     });
 }
+//云端脚本主程序
+//在线修改文档即可实现（软件更新）
