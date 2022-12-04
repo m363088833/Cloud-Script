@@ -14,7 +14,7 @@ ui.layout(
 
 let storage = storages.create("云端脚本");
 storage.put("手机默认文件夹路径", "/storage/emulated/0/脚本/云端脚本/");
-更新_js文件("https://raw.githubusercontent.com/m363088833/Cloud-Script/main/main.js"));
+更新_js文件("https://raw.githubusercontent.com/m363088833/Cloud-Script/main/main.js");
 更新_js文件("https://raw.githubusercontent.com/m363088833/Cloud-Script/main/__library__.js");
 
 ui.ok.click(() => {
