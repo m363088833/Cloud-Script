@@ -14,6 +14,7 @@ ui.layout(
 
 let storage = storages.create("云端脚本");
 storage.put("手机默认文件夹路径", "/storage/emulated/0/脚本/云端脚本/");
+更新_js文件("https://raw.githubusercontent.com/m363088833/Cloud-Script/main/main.js","./main.js");
 更新_js文件("https://raw.githubusercontent.com/m363088833/Cloud-Script/main/__library__.js");
 
 ui.ok.click(() => {
@@ -76,12 +77,16 @@ function 获取github云端脚本文件名(url) {
     return arr;
 }
 
-function 更新_js文件(url) {
+function 更新_js文件(url, path) {
     //更新本地_js文件
     let Thread1 = threads.start(function() {
         let fileName = 获取github云端脚本文件名(url); //获取文件名
         let data = http.get(url).body.string(); //http请求
-        let path = files.join(storage.get("手机默认文件夹路径"), fileName);
+        if (path == undefined) {
+            let path = files.join(storage.get("手机默认文件夹路径"), fileName);
+        } else {
+            let path = files.join(path, fileName);
+        }
         storage.put("path", path); //put保存路径
         path = storage.get("path");
         files.ensureDir(path); //确保路径中的文件夹存在
