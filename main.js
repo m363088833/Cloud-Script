@@ -3,7 +3,7 @@
 ui.layout(
     <vertical padding="16">
         <text text="Cloud Script" textSize="30" marginTop="200" gravity="center"/>
-        <input id="链接" w="*" h="70" hint="请输入链接（或者JS代码）"/>
+        <input id="链接" w="*" h="70" hint="请输入链接"/>
         
         <button id="ok" text="ok" textSize="40" w="180" marginTop="20" layout_gravity="center"
         style="Widget.AppCompat.Button.Colored"/>
