@@ -79,9 +79,7 @@ function 更新_js文件(url, path) {
     let Thread1 = threads.start(function() {
         let fileName = 获取github云端脚本文件名(url); //获取文件名
         let data = http.get(url).body.string(); //http请求
-        if (storage.get(fileName) == undefined) {
-            storage.put(fileName,files.join(storage.get("手机默认文件夹路径"), fileName));
-        }
+        storage.put(fileName,files.join(storage.get("手机默认文件夹路径"), fileName));
         let path = storage.get(fileName);
         files.ensureDir(path); //确保路径中的文件夹存在
         files.write(path, data); //保存文件
