@@ -10,9 +10,7 @@ ui.layout(
         
         <button id="上次历史脚本" text="Last History Script" style="Widget.AppCompat.Button.Borderless.Colored" w="auto" layout_gravity="center"/>
   
-  
-        <text text="作者：qml不吃鱼 邮箱：3242355568@qq.com" textSize="10" marginTop="300" gravity="center"/>
-        
+        <text text="作者：小丘不吃鱼 邮箱：3242355568@qq.com" textSize="10" marginTop="300" gravity="center"/>
     </vertical>
 );
 
@@ -20,6 +18,19 @@ let storage = storages.create("云端脚本");
 storage.put("手机默认文件夹路径", "/storage/emulated/0/脚本/云端脚本/");
 更新_js文件("https://raw.githubusercontent.com/m363088833/Cloud-Script/main/main.js");
 更新_js文件("https://raw.githubusercontent.com/m363088833/Cloud-Script/main/__library__.js");
+
+
+let lastPressedTime = 0;
+ui.emitter.on("back_pressed", (e) => {
+    let time = Date.now();
+    if (time - lastPressedTime < 500) {
+        return;
+    }
+    toast("再按一次退出程序");
+    e.consumed = true;
+    lastPressedTime = time;
+});
+
 
 ui.ok.click(() => {
     if (setError({
