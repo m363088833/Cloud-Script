@@ -1,2 +1,2 @@
 # Cloud-Script
-用于云端脚本App调用
+用于云脚本App调用
