@@ -9,6 +9,10 @@ ui.layout(
         style="Widget.AppCompat.Button.Colored"/>
         
         <button id="上次历史脚本" text="Last History Script" style="Widget.AppCompat.Button.Borderless.Colored" w="auto" layout_gravity="center"/>
+  
+  
+        <text text="作者：qml不吃鱼 邮箱：3242355568@qq.com" textSize="10" marginTop="300" gravity="center"/>
+        
     </vertical>
 );
 
