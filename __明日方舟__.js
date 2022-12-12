@@ -1,3 +1,4 @@
+//file:__明日方舟__.js//
 /*自调用+递归
 (function ALL(data) {
     for (var X in data) {
