@@ -1,12 +1,53 @@
 /*自调用+递归
-new function ALL(data) {
+(function ALL(data) {
     for (var X in data) {
         typeof data[X] == "function" ? eval(X + "=" + data[X]) : false;
         typeof data[X] == "object" ? ALL(data[X]) : console.log(X + "=" + data[X]);
     }
-}(require("./__library__.js"));*/
+})(require("./__library__.js"));
+*/
 
 var library = {};
+
+
+library.多线程找图 = function(template, option, img) {
+    option.sleep1 ? sleep(option.sleep1) : null;
+    let Thread = threads.start(function() {
+        library.findImages(template, option, img);
+    });
+    option.sleep2 ? sleep(option.sleep2) : null;
+}
+
+
+
+// 5.找图
+/* @ template {string} image对象
+ * @ option   {object} 选项
+ * @ return   {object} 找图成功返回{x,y}位置，失败返回null。
+ */
+library.findImages = function(template, option, img) {
+    option == undefined ? option = {} : null; //确保option省略不写不会报错
+    img == undefined ? img = captureScreen() : null;
+    option.Name = template;
+    template = eval(template);
+    let Point = findImage(img, template, option);
+    if (Point) {
+        option.dX ? true : option.dX = 0; //默认点击左上角坐标(0,0)
+        option.dY ? true : option.dY = 0;
+        option.CLICK = {};
+        option.CLICK.x = Point.x + template.getWidth() * option.dX;
+        option.CLICK.y = Point.y + template.getHeight() * option.dY;
+        option.console == undefined ? console.info("Target found !\noption=>", option) : null;
+        // {CLICK.x:?} 0.0~1.0浮点值，选择点击位置
+        option.click == undefined ? click(option.CLICK.x, option.CLICK.y) : null;
+        option.sleep ? sleep(option.sleep) : null; //默认无延时，可设置找图成功延迟时间
+    } else {
+        option.console == undefined ? console.verbose("Find Image? =>", Point) : null;
+    }
+    return Point;
+}
+
+
 
 // 1.申请权限
 /* @ morePermissions {boolean}
@@ -90,7 +131,7 @@ library.imagesObjectFile = function(Extensions, path) {
         if (files.isFile(obb[i]) && files.getExtension(obb[i]) == Extensions) {
             //获取文件名称
             let fileName = files.getNameWithoutExtension(obb[i]);
-            if (fileName.match(/^\d+/) == null) {
+            if (fileName.match(/^\d+/) == null) { //筛选非数字开头的图片文件名
                 //创建新属性名=image对象
                 imgObj[fileName] = images.read(obb[i]);
             } else {
@@ -113,12 +154,8 @@ library.imageConvertBase64 = function(data, path) {
         obb[X] = images.toBase64(data[X], "png", 100);
     }
     if (path != undefined) {
-        /*确保路径所在的文件夹存在。
-        如果该路径所在文件夹不存在，则创建该文件夹。*/
-
-        files.ensureDir(path);
-        //将js对象转换为字符串并写入文件
-        this.writeJSON(obb, path);
+        files.ensureDir(path); //确保文件夹路径存在
+        this.writeJSON(obb, path); //将js对象转换为字符串并写入文件
     }
     return obb;
 }
@@ -153,31 +190,6 @@ library.base64ConvertImage = function(JSONPath, Extensions, FolderPath) {
 }
 
 
-// 5.找图
-/* @ template {string} image对象
- * @ option   {object} 选项
- * @ return   {object} 找图成功返回{x,y}位置，失败返回null。
- */
-library.findImages = function(template, option) {
-    option == undefined ? option = {} : false; //确保option省略不写不会报错
-    option.name = template; //用于显示文件名(属性名)
-    let newTemplate = eval(template); //字符串转换对象属性名
-    let Point = findImage(captureScreen(), newTemplate, option);
-    if (Point) {
-        option.dX ? true : option.dX = 0; //默认点击左上角坐标(0,0)
-        option.dY ? true : option.dY = 0;
-        option.CLICK = {};
-        option.CLICK.x = Point.x + newTemplate.getWidth() * option.dX;
-        option.CLICK.y = Point.y + newTemplate.getHeight() * option.dY;
-        option.console == undefined ? console.info("Target found !\noption=>", option) : false;
-        // {CLICK.x:?} 0.0~1.0浮点值，选择点击位置
-        option.click == undefined ? click(option.CLICK.x, option.CLICK.y) : false;
-        option.sleep ? sleep(option.sleep) : false; //默认无延时，可设置找图成功延迟时间
-    } else {
-        option.console == undefined ? console.verbose("Find Image? =>", option) : false;
-    }
-    return Point;
-}
 
 
 // 6.多目标找图
@@ -214,9 +226,9 @@ library.findImagesMax = function(template, option) {
  * @ option   {object} 找图选项
  * @ return   {object} 找图成功返回{x,y}位置，失败返回null。
  */
-library.loopFindImages = function(templat, option) {
+library.loopFindImages = function(templat, option, img) {
     for (let i = 0; i < 1; i++) {
-        var p = this.findImages(templat, option);
+        var p = this.findImages(templat, option, img);
         if (p) {
             var pi = p; //保存找图信息，避免循环刷新
             i = -1;
@@ -275,8 +287,8 @@ library.openApp = function(AppName) {
         o.ObtainTheAppName = AppName; //用于显示
         launchApp(AppName) ? o.n = "成功" : o.n = "失败"; //使用应用名打开应用
     }
-    sleep(500);
-    toastLog("启动：" + o.ObtainTheAppName + o.n);
+    //sleep(500);
+    //toastLog("启动：" + o.ObtainTheAppName + o.n);
 }
 
 
@@ -289,7 +301,7 @@ library.closeApp = function(AppName) {
         back();
     }
     //判断该字符串是否是以 (com.)开头的APP包名
-    if (!this.getStringType(AppName).PackageName) { //如果不是包名
+    if (!this.getStringType(AppName).type_PackageName) { //如果不是包名
         var newAppName = AppName; //应用名称
         var packageName = app.getPackageName(AppName); //获取应用的包名
     } else {
@@ -351,20 +363,22 @@ library.移动QQ文件 = function(path) {
 }
 
 
-// 13.判断字符串类型
+// 13.判断字符串类型(正则表达式)
 /* @ strings {string} 需要判断的字符串
- * @ return  {object} 
  */
 library.getStringType = function(strings) {
     var arr = {
-        Chinese: new RegExp("[\u4E00-\u9FA5]"), //中文
-        English: new RegExp("[A-Za-z]"), //英文
-        Digit: new RegExp("[0-9]"), //数字
-        Symbol: new RegExp("[`~!@#$^&*()=|{}':;',\\[\\]._<>《》/\?~！@#￥……&*（）——|{}【】‘；：”“'。，、？+-/ ]|[\\\\/]")
+        type_Chinese: RegExp("[\u4E00-\u9FA5]"), //中文
+        type_English: RegExp("[A-Za-z]"), //英文
+        type_Digit: RegExp("[0-9]"), //数字
+        type_Symbol: RegExp("[`~!@#$^&*()=|{}':;',\\[\\]._<>《》/\?~！@#￥……&*（）——|{}【】‘；：”“'。，、？+-/ ]|[\\\\/]"), //符号
+        type_PackageName: RegExp(/^com.[a-z]/), //识别APP包名
+        type_Url: RegExp("^htt+(p||ps)+://.*?"), //识别网址
+        type_CloudScript: RegExp("^htt+(p||ps)+://.*?[.]js$") //识别github云端脚本.js结尾网址
     }
     var type = {};
     for (let X in arr) {
-        arr[X].test(strings) ? type[X] = true : false;
+        arr[X].test(strings) ? type[X] = true : type[X] = false;
     }
     return type;
 }
@@ -415,10 +429,9 @@ library.Display_Data = function(data, pauseTime) {
 }
 
 
-
-//ui提示：输入不能为空(并保存输入框内数据)
+//ui提示：输入不能为空(storages保存输入框内数据)
 /* @ arr    {string} 
- * @ return {string}
+ * @ return {string} 
  */
 function setError(arr) {
     var obb = true;
@@ -435,5 +448,64 @@ function setError(arr) {
     return obb; //判断输入框是否空白
 }
 
+
+function 获取github云端脚本文件名(url) {
+    var 仓库 = "https://raw.githubusercontent.com/m363088833/Cloud-Script/main/";
+    var arr = url.split(仓库)[url.split(仓库).length - 1];
+    //console.log("仓库名：" + arr);
+    return arr;
+}
+
+
+function 停止其他脚本() {
+    engines.all().map((ScriptEngine) => {
+        if (engines.myEngine().toString() !== ScriptEngine.toString()) {
+            ScriptEngine.forceStop();
+        }
+    });
+}
+
+function 停止自己当前脚本() {
+    engines.myEngine().forceStop();
+}
+
+// UI全屏无状态栏(常用)
+function UI全屏() {
+    importClass(android.view.WindowManager);
+    importClass(android.view.View);
+    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+    activity
+        .getWindow()
+        .getDecorView()
+        .setSystemUiVisibility(
+            android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR |
+            android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+            android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
+        );
+}
+
+//是否显示UI全屏full(true);//不太好用。
+function full(enable) {
+    importClass(android.view.WindowManager);
+    if (enable) {
+        //设置全屏
+        let lp = activity.getWindow().getAttributes();
+        lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        activity.getWindow().setAttributes(lp);
+        activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+    } else {
+        //取消全屏
+        let attr = activity.getWindow().getAttributes();
+        attr.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        activity.getWindow().setAttributes(attr);
+        activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+    }
+}
+
+
+function 状态栏颜色() {
+    ui.statusBarColor("#ffffff");
+}
 
 module.exports = library;
