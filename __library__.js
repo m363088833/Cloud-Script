@@ -1,59 +1,13 @@
-/*自调用+递归
-(function ALL(data) {
-    for (var X in data) {
-        typeof data[X] == "function" ? eval(X + "=" + data[X]) : false;
-        typeof data[X] == "object" ? ALL(data[X]) : console.log(X + "=" + data[X]);
-    }
-})(require("./__library__.js"));
-*/
-
 var library = {};
-
-
-library.多线程找图 = function(template, option, img) {
-    option.sleep1 ? sleep(option.sleep1) : null;
-    let Thread = threads.start(function() {
-        library.findImages(template, option, img);
-    });
-    option.sleep2 ? sleep(option.sleep2) : null;
-}
+// eval(require("/storage/emulated/0/脚本/module_Library/__Interface__.js").requires(0));
 
 
 
-// 5.找图
-/* @ template {string} image对象
- * @ option   {object} 选项
- * @ return   {object} 找图成功返回{x,y}位置，失败返回null。
- */
-library.findImages = function(template, option, img) {
-    option == undefined ? option = {} : null; //确保option省略不写不会报错
-    img == undefined ? img = captureScreen() : null;
-    option.Name = template;
-    template = eval(template);
-    let Point = findImage(img, template, option);
-    if (Point) {
-        option.dX ? true : option.dX = 0; //默认点击左上角坐标(0,0)
-        option.dY ? true : option.dY = 0;
-        option.CLICK = {};
-        option.CLICK.x = Point.x + template.getWidth() * option.dX;
-        option.CLICK.y = Point.y + template.getHeight() * option.dY;
-        option.console == undefined ? console.info("Target found !\noption=>", option) : null;
-        // {CLICK.x:?} 0.0~1.0浮点值，选择点击位置
-        option.click == undefined ? click(option.CLICK.x, option.CLICK.y) : null;
-        option.sleep ? sleep(option.sleep) : null; //默认无延时，可设置找图成功延迟时间
-    } else {
-        option.console == undefined ? console.verbose("Find Image? =>", Point) : null;
-    }
-    return Point;
-}
-
-
-
-// 1.申请权限
-/* @ morePermissions {boolean}
- *     {true} 开启更多权限
- */
+// 申请权限
 library.getPermission = function(morePermissions) {
+    /* @ morePermissions {boolean}
+     *     {true} 开启更多权限
+     */
     //无障碍服务
     if (auto.service == null) {
         toastLog("请开启无障碍服务");
@@ -69,30 +23,30 @@ library.getPermission = function(morePermissions) {
     } else {
         console.warn("已获得悬浮窗权限");
     }
-    //截图权限
-    if ($images.getScreenCaptureOptions() == null) {
 
-        let Thread = threads.start(function() {
-            let Allow = textMatches(/(允许|立即开始|统一)/).findOne(10 * 1000);
-            if (Allow) {
-                Allow.click();
-            }
-        });
+    var Thread2 = threads.start(function() {
+        //截图权限
+        if ($images.getScreenCaptureOptions() == null) {
 
-        var 线程2 = threads.start(function() {
+            let Thread = threads.start(function() {
+                let Allow = textMatches(/(允许|立即开始|统一)/).findOne(10 * 1000);
+                if (Allow) {
+                    Allow.click();
+                }
+            });
             if (!requestScreenCapture()) {
                 toastLog("请求截图权限失败");
                 exit();
             }
-        });
-        线程2.join();
 
-    }
-    console.warn("已获得截图权限");
+        }
+        console.warn("已获得截图权限");
+    });
+    Thread2.join(); //等待join2线程结束
 
+    //开启更多权限
     if (morePermissions == true) {
-        //判断Autojs是否是最新版本(以下代码在旧版本可能会报错)
-        if (app.autojs.versionName == "Pro 9.2.13-0") {
+        var Thread3 = threads.start(function() {
             //关闭内存泄露检测
             $debug.setMemoryLeakDetectionEnabled(false);
             console.warn("已关闭内存泄露检测");
@@ -110,19 +64,208 @@ library.getPermission = function(morePermissions) {
             } else {
                 console.warn('已开启前台服务');
             }
-        } else {
-            toastLog("当前是旧版本，不支持开启更多权限");
-        }
+        });
     }
 }
 
 
-// 2.路径目录下所有图片转换为image对象
+library.测试1 = function(text) {
+    console.log(text);
+    return "test1";
+}
+
+
+// 找图
+/* @ template {string} image对象
+     * @ option   {object} 选项
+     * @ return   {object} 找图成功返回{x,y}位置，失败返回null。
+     */
+library.findImages = function(template, option, img) {
+    option == undefined ? option = {} : null; //确保option省略不写不会报错
+    img == undefined ? img = captureScreen() : null;
+    option.Name = template; //打印找图信息，显示名称
+    template = eval(template); //转换为图片对象
+    let Point = findImage(img, template, option); //找图对比
+    if (Point) {
+        this.findImagesBox(template, Point);
+        option.小图宽度 = template.getWidth();
+        option.小图高度 = template.getHeight();
+
+        option.dX ? true : option.dX = 0; //默认点击左上角坐标(0,0)
+        option.dY ? true : option.dY = 0;
+        option.CLICK = {};
+        option.CLICK.x = Point.x + option.小图宽度 * option.dX;
+        option.CLICK.y = Point.y + option.小图高度 * option.dY;
+        option.console == undefined ? console.info("Target found !\noption=>", option) : null;
+        option.click == undefined ? click(option.CLICK.x, option.CLICK.y) : null;
+        option.sleep ? sleep(option.sleep) : null; //默认无延时，可设置找图成功延迟时间
+    } else {
+        option.console == undefined ? console.verbose("Find Image? =>", option.Name, " = ", Point) : null;
+    }
+    return Point;
+}
+
+
+// 找图方框
+library.findImagesBox = function(data, Point, time) {
+    var Thread = threads.start(function() {
+        var window = floaty.rawWindow(
+            <frame>
+                            <canvas id="board"/>
+                        </frame>
+        );
+        window.setTouchable(false); //关闭设置窗口不可触摸
+        window.setSize(-1, -1); //设置全屏
+        window.board.on("draw", function(canvas) {
+            var paintGreen = new Paint();
+            paintGreen.setAntiAlias(true); //抗锯齿
+            paintGreen.setAlpha(255); //0~255透明度
+            paintGreen.setFakeBoldText(true);
+            paintGreen.setStrokeWidth(4); //设置行程宽度
+            paintGreen.setStyle(Paint.Style.STROKE); //设置样式：描边
+            paintGreen.setColor(colors.parseColor("#FF00FF00")); //设置颜色
+
+            var 状态栏高度 = context.getResources().getDimensionPixelSize(context.getResources().getIdentifier("status_bar_height", "dimen", "android"));
+            var 屏幕方向 = context.getSystemService(context.WINDOW_SERVICE).getDefaultDisplay().getRotation();
+            var 小图宽度 = data.getWidth();
+            var 小图高度 = data.getHeight();
+
+            if (屏幕方向 === 0 || 屏幕方向 === 2) { //竖屏
+                var x1 = Point.x;
+                var y1 = Point.y - 状态栏高度;
+                var x2 = Point.x + 小图宽度;
+                var y2 = Point.y + 小图高度 - 状态栏高度;
+            } else if (屏幕方向 === 1) { //横屏
+                var x1 = Point.x - 状态栏高度;
+                var y1 = Point.y;
+                var x2 = Point.x + 小图宽度 - 状态栏高度;
+                var y2 = Point.y + 小图高度;
+            } else if (屏幕方向 === 3) { //反向横屏
+                var x1 = Point.x;
+                var y1 = Point.y;
+                var x2 = Point.x + 小图宽度;
+                var y2 = Point.y + 小图高度;
+            }
+            canvas.drawRect(x1, y1, x2, y2, paintGreen);
+        });
+        time == undefined ? time = 800 : null; //time默认800ms
+        setTimeout(() => {
+            window.close();
+        }, time);
+    });
+}
+
+
+library.多点找色 = function(template, option) {
+    option == undefined ? option = {} : null;
+    let img = captureScreen();
+    option.Name = template;
+    template = eval(template);
+    let Point = images.findMultiColors(img, template[0][2], template, option);
+    if (Point) {
+        option.Point = Point;
+        this.MultiPointColorFindingBox(template, Point);
+        option.console == undefined ? console.info("Target found !\noption=>", option) : null;
+        option.click == undefined ? click(Point.x, Point.y) : null;
+        img.recycle(); //释放内存
+        option.sleep ? sleep(option.sleep) : null; //默认无延时，可设置找图成功延迟时间 
+    } else {
+        option.console == undefined ? console.verbose("Find Image? =>", option.Name, " = ", Point) : null;
+    }
+    return Point;
+}
+
+
+// 多点找色方框
+library.MultiPointColorFindingBox = function(data, Point, time) {
+    let Thread = threads.start(function() {
+        let window = floaty.rawWindow(
+            <frame>
+                            <canvas id="board"/>
+                        </frame>
+        );
+        window.setTouchable(false); //关闭设置窗口不可触摸
+        window.setSize(-1, -1); //设置全屏
+        window.board.on("draw", function(canvas) {
+            var paintGreen = new Paint();
+            paintGreen.setAntiAlias(true); //抗锯齿
+            paintGreen.setAlpha(255); //0~255透明度
+            paintGreen.setFakeBoldText(true);
+            paintGreen.setStrokeWidth(4); //设置行程宽度
+            paintGreen.setStyle(Paint.Style.STROKE); //设置样式：描边
+            paintGreen.setColor(colors.parseColor("#FF00FF00")); //设置颜色
+
+            var 状态栏高度 = context.getResources().getDimensionPixelSize(context.getResources().getIdentifier("status_bar_height", "dimen", "android"));
+            var 屏幕方向 = context.getSystemService(context.WINDOW_SERVICE).getDefaultDisplay().getRotation();
+            var 屏幕宽度 = device.height;
+            var 屏幕高度 = device.width;
+
+            for (let i = 0; i < data.length; i++) {
+                if (屏幕方向 === 0 || 屏幕方向 === 2) { //判断竖屏
+                    var x1 = Point.x + data[i][0] - 10;
+                    var y1 = Point.y + data[i][1] - 10 - 状态栏高度;
+                    var x2 = Point.x + data[i][0] + 10;
+                    var y2 = Point.y + data[i][1] + 10 - 状态栏高度;
+                } else if (屏幕方向 === 1) { //判断正横屏
+                    var x1 = Point.x + data[i][0] - 10 - 状态栏高度;
+                    var y1 = Point.y + data[i][1] - 10;
+                    var x2 = Point.x + data[i][0] + 10 - 状态栏高度;
+                    var y2 = Point.y + data[i][1] + 10;
+                } else if (屏幕方向 === 3) { //判断反横屏
+                    var x1 = Point.x + data[i][0] - 10;
+                    var y1 = Point.y + data[i][1] - 10;
+                    var x2 = Point.x + data[i][0] + 10;
+                    var y2 = Point.y + data[i][1] + 10;
+                }
+                var x1 = (x1 > 0 ? x1 : 0); //获取大于0的数字
+                var y1 = (y1 > 0 ? y1 : 0); //同上
+                var x2 = (x2 > 0 ? x2 : 0);
+                var y2 = (y2 > 0 ? y2 : 0);
+                canvas.drawRect(x1, y1, x2, y2, paintGreen);
+            }
+        });
+        time == undefined ? time = 800 : null; //time默认800ms
+        setTimeout(() => {
+            window.close();
+        }, time);
+    });
+}
+
+
+// 普通的绘画方框
+library.ordinaryBox = function(x1, y1, x2, y2, time) {
+    let Thread = threads.start(function() {
+        let window = floaty.rawWindow(
+            <frame>
+                            <canvas id="board"/>
+                        </frame>
+        );
+        window.setTouchable(false); //关闭设置窗口不可触摸
+        window.setSize(-1, -1); //设置全屏
+        window.board.on("draw", function(canvas) {
+            var paintGreen = new Paint();
+            paintGreen.setAntiAlias(true); //抗锯齿
+            paintGreen.setAlpha(255); //0~255透明度
+            paintGreen.setFakeBoldText(true);
+            paintGreen.setStrokeWidth(4); //设置行程宽度
+            paintGreen.setStyle(Paint.Style.STROKE); //设置样式：描边
+            paintGreen.setColor(colors.parseColor("#FF00FF00")); //设置颜色
+            canvas.drawRect(x1, y1, x2, y2, paintGreen);
+        });
+        time == undefined ? time = 800 : null; //time默认800ms
+        setTimeout(() => {
+            window.close();
+        }, time);
+    });
+}
+
+
+// 路径目录下所有图片转换为image对象
 /* (属性名为图片文件名本身)
- * @ Extensions {string} 文件扩展名
- * @ path       {string} 文件夹路径
- * @ return     {object} image对象
- */
+     * @ Extensions {string} 文件扩展名
+     * @ path       {string} 文件夹路径
+     * @ return     {object} image对象
+     */
 library.imagesObjectFile = function(Extensions, path) {
     var obb = this.getFilesFromPath(path);
     var imgObj = {};
@@ -143,11 +286,12 @@ library.imagesObjectFile = function(Extensions, path) {
 }
 
 
-// 3.图片编码转换base64
+// 图片编码转换base64    
 /* @ data {string} 图片对象
  * @ path {string} 要保存的文件路径
  */
 library.imageConvertBase64 = function(data, path) {
+
     var obb = {};
     for (let X in data) {
         //图片编码为base64数据并返回
@@ -161,11 +305,11 @@ library.imageConvertBase64 = function(data, path) {
 }
 
 
-// 4.base64编码转换图片
+// base64编码转换图片
 /* @ JSONPath   {string} JSON文件路径
- * @ Extensions {string} 文件扩展名
- * @ FolderPath {string} 要保存的文件夹路径
- */
+     * @ Extensions {string} 文件扩展名
+     * @ FolderPath {string} 要保存的文件夹路径
+     */
 library.base64ConvertImage = function(JSONPath, Extensions, FolderPath) {
     if (typeof JSONPath == "string" && files.isFile(JSONPath)) {
         var arr = this.callJSON(JSONPath);
@@ -190,16 +334,14 @@ library.base64ConvertImage = function(JSONPath, Extensions, FolderPath) {
 }
 
 
-
-
-// 6.多目标找图
+// 多目标找图
 /* @ template {string} 小图对象
- * @ option   {object} 选项
- * @ return   {object} 找图成功返回[{x,y}]位置数组，失败返回[]。
- */
+     * @ option   {object} 选项
+     * @ return   {object} 找图成功返回[{x,y}]位置数组，失败返回[]。
+     */
 library.findImagesMax = function(template, option) {
     option == undefined ? option = {} : false; //(确保option省略不写)不会报错
-    let Point = images.matchTemplate(captureScreen(), template, option);
+    var Point = images.matchTemplate(captureScreen(), template, option);
     /*排序方向包括 left (左), top (上), right (右), bottom (下)。
     默认将匹配结果按匹配位置从左往右、从上往下排序。*/
 
@@ -219,13 +361,13 @@ library.findImagesMax = function(template, option) {
 }
 
 
-// 7.循环找图
-/*     (识别对象一直存在，则一直点击)
- *
- * @ template {string} 小图对象
- * @ option   {object} 找图选项
- * @ return   {object} 找图成功返回{x,y}位置，失败返回null。
- */
+// 循环找图
+    /*     (识别对象一直存在，则一直点击)
+     *
+     * @ template {string} 小图对象
+     * @ option   {object} 找图选项
+     * @ return   {object} 找图成功返回{x,y}位置，失败返回null。
+     */
 library.loopFindImages = function(templat, option, img) {
     for (let i = 0; i < 1; i++) {
         var p = this.findImages(templat, option, img);
@@ -238,10 +380,10 @@ library.loopFindImages = function(templat, option, img) {
 }
 
 
-// 8.遍历目录下所有文件夹与文件
+// 遍历目录下所有文件夹与文件
 /* @ path   {string} 目录路径
- * @ return {Array} 返回所有文件夹名与文件名
- */
+     * @ return {Array} 返回所有文件夹名与文件名
+     */
 library.getFilesFromPath = function(path) {
     var arrDir = [];
     var arrFile = [];
@@ -273,9 +415,9 @@ library.getFilesFromPath = function(path) {
 }
 
 
-// 9.打开应用
+// 打开应用
 /* @ AppName {string} 应用名||应用包名
- */
+     */
 library.openApp = function(AppName) {
     var o = {};
     //判断该字符串是否是以 (com.)开头的APP包名
@@ -292,9 +434,9 @@ library.openApp = function(AppName) {
 }
 
 
-// 10.强制关闭应用
+// 强制关闭应用
 /* @ AppName {string} 应用名||应用包名
- */
+     */
 library.closeApp = function(AppName) {
     if (auto.service == null) { //判断无障碍服务是否开启
         auto.waitFor();
@@ -313,19 +455,21 @@ library.closeApp = function(AppName) {
     let is_sure = textMatches(/(.*强.*|.*停.*|.*结.*|.*行.*)/).findOne();
     if (is_sure.enabled()) {
         textMatches(/(.*强.*|.*停.*|.*结.*|.*行.*)/).findOne().click();
+        sleep(500);
         textMatches(/(.*确.*|.*定.*)/).findOne().click();
         toastLog(newAppName + "App已被关闭");
     } else {
         toastLog(newAppName + "App不在后台运行");
     }
+    sleep(500);
     back();
 }
 
 
-// 11.写入JSON文件
+// 写入JSON文件
 /* @ data {string} 参数
- * @ path {string} 要保存的路径
- */
+     * @ path {string} 要保存的路径
+     */
 library.writeJSON = function(data, path) {
     /*确保路径jsonPath所在的文件夹存在，
     如果该路径所在文件夹不存在，则创建该文件夹*/
@@ -333,23 +477,39 @@ library.writeJSON = function(data, path) {
     //将js对象转换为字符串
     let newData = JSON.stringify(data);
     //写入文件
-    files.write(path, newData, "utf-8");
+    files.write(path, newData, "utf-8"); //单独使用生成的文件开头就不会有"符号
 }
 
 
-// 12.读取JSON文件
+// 读取JSON文件
 /* @ path {string} 路径
- */
+     */
 library.callJSON = function(path) {
-    //读取文件
-    let arr = files.read(path);
-    //解释json文件
-    let params = JSON.parse(arr);
+    //读取文件并解释json文件
+    let params = JSON.parse(files.read(path));
     return params;
 }
 
 
-//不支持Android11以及后续的版本
+library.生成xml启动图 = function(json路径, 生成所在文件夹路径) {
+    let v1 = `<?xml version="1.0" encoding="UTF-8" ?>
+<vertical>
+    <img w="*" h="0" layout_weight="1" src="data:image/png;base64,`;
+
+    let v2 = `" scaleType="fitXY"/>
+</vertical>`;
+    //读取文件
+    let arr = this.调用JSON(json路径);
+    files.ensureDir(生成所在文件夹路径); //确保文件夹路径存在
+    for (let X in arr) {
+        console.info(X);
+        //写入文件
+        files.write(生成所在文件夹路径 + X + ".xml", v1 + arr[X] + v2);
+    }
+}
+
+
+// 不支持Android11以及后续的版本
 library.移动QQ文件 = function(path) {
     //QQ下载保存的，默认文件夹路径
     let qqPath = "/storage/emulated/0/Android/data/com.tencent.mobileqq/Tencent/QQfile_recv/";
@@ -363,9 +523,9 @@ library.移动QQ文件 = function(path) {
 }
 
 
-// 13.判断字符串类型(正则表达式)
+// 判断字符串类型(正则表达式)
 /* @ strings {string} 需要判断的字符串
- */
+     */
 library.getStringType = function(strings) {
     var arr = {
         type_Chinese: RegExp("[\u4E00-\u9FA5]"), //中文
@@ -384,9 +544,9 @@ library.getStringType = function(strings) {
 }
 
 
-// 14.自定义控制台
+// 自定义控制台
 /* @ option {string} 选项
- */
+     */
 library.consoles = function(option) {
     if (option.x && option.y) {
         console.setPosition(option.x, option.y);
@@ -397,19 +557,23 @@ library.consoles = function(option) {
 }
 
 
-//测试1
+// 测试1
 library.测试加法 = function(a, b) {
     let c = a + b;
     console.info(c);
     alert(c);
     return c;
 }
+
+
 library.说明书 = function() {
     var a = "img.小黄标";
     var ab = split(".")[1];
     console.log(ab);
 }
-//播放铃声：叮咚声
+
+
+// 播放铃声：叮咚声
 library.playRingtone = function() {
     let Uri = android.net.Uri;
     let RingtoneManager = android.media.RingtoneManager;
@@ -417,7 +581,9 @@ library.playRingtone = function() {
     let rt = RingtoneManager.getRingtone(context, uri);
     rt.play();
 }
-//慢放属性名
+
+
+// 慢放属性名
 library.Display_Data = function(data, pauseTime) {
     var arr = Object.keys(data);
     var t = 0;
@@ -429,11 +595,12 @@ library.Display_Data = function(data, pauseTime) {
 }
 
 
-//ui提示：输入不能为空(storages保存输入框内数据)
+// ui提示：输入不能为空(storages保存输入框内数据)
 /* @ arr    {string} 
- * @ return {string} 
- */
-function setError(arr) {
+     * @ return {string} 
+     */
+library.setError = function(arr) {
+    
     var obb = true;
     for (let X in arr) {
         let text = eval("ui." + X + ".text()");
@@ -449,15 +616,14 @@ function setError(arr) {
 }
 
 
-function 获取github云端脚本文件名(url) {
+library.获取github云端脚本文件名 = function(url) {
     var 仓库 = "https://raw.githubusercontent.com/m363088833/Cloud-Script/main/";
     var arr = url.split(仓库)[url.split(仓库).length - 1];
-    //console.log("仓库名：" + arr);
     return arr;
 }
 
 
-function 停止其他脚本() {
+library.停止其他脚本 = function() {
     engines.all().map((ScriptEngine) => {
         if (engines.myEngine().toString() !== ScriptEngine.toString()) {
             ScriptEngine.forceStop();
@@ -465,28 +631,23 @@ function 停止其他脚本() {
     });
 }
 
-function 停止自己当前脚本() {
+
+library.停止自己当前脚本 = function() {
     engines.myEngine().forceStop();
 }
 
+
 // UI全屏无状态栏(常用)
-function UI全屏() {
+library.UI全屏 = function() {
     importClass(android.view.WindowManager);
     importClass(android.view.View);
     activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-    activity
-        .getWindow()
-        .getDecorView()
-        .setSystemUiVisibility(
-            android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR |
-            android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-            android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
-            android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
-        );
+    activity.getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | android.view.View.SYSTEM_UI_FLAG_FULLSCREEN);
 }
 
-//是否显示UI全屏full(true);//不太好用。
-function full(enable) {
+
+// 是否显示UI全屏full(true);//不太好用。
+library.是否显示UI全屏 = function(enable) {
     importClass(android.view.WindowManager);
     if (enable) {
         //设置全屏
@@ -504,8 +665,188 @@ function full(enable) {
 }
 
 
-function 状态栏颜色() {
+library.设置UI全屏 = function() {
+    importClass(android.view.WindowManager);
+    let lp = activity.getWindow().getAttributes();
+    lp.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+    activity.getWindow().setAttributes(lp);
+    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+}
+
+
+library.设置状态栏颜色 = function() {
     ui.statusBarColor("#ffffff");
 }
+
+
+// 向前加零，必须写成"number"，否则数字前方有一个0则默认识别为八进制
+library.forwardPlusZero = function(number, 位数) {
+    number = number.toString(8);
+    number = Number(number);
+    var arr = 位数 - this.JudgeTheNumberOfDigits(number)
+    for (let i = arr; i > 0; i--) {
+        number = "0" + number;
+    }
+    return number;
+}
+
+
+// 判断数字的位数，必须写成"number"，否则数字前方有一个0则默认识别为八进制
+library.JudgeTheNumberOfDigits = function(number) {
+    for (let i = 1, e = 0, t = 1; i <= 100; i++) {
+        if (e <= number / t && number / t < 10) {
+            return i;
+        }
+        e === 0 ? e = 1 : 0; //在个位数0~1之前的数判断条件需要改成(0<=数字/1 && 数字/1<10)
+        t *= 10;
+    }
+}
+
+
+library.importClass_语音播报 = function() {
+    importClass(android.speech.tts.TextToSpeech.Engine);
+    importClass(java.util.Locale);
+    importClass(android.speech.tts.TextToSpeech);
+    importClass(android.speech.tts.TextToSpeech.OnInitListener);
+}
+
+
+library.语音播报 = function(str) {
+    var pitch = 1.0;
+    var speechRate = 1.0;
+    var obj = {
+        onInit: function(status) {
+            if (status == TextToSpeech.SUCCESS) {
+                if (tts.setLanguage(Locale.CHINESE) == TextToSpeech.SUCCESS && tts.setPitch(pitch) == TextToSpeech.SUCCESS && tts.setSpeechRate(speechRate) == TextToSpeech.SUCCESS) {} else {
+                    exit();
+                }
+            } else {}
+        }
+    }
+    tts = new TextToSpeech(context, TextToSpeech.OnInitListener(obj))
+    sleep(100);
+    tts.speak(str, TextToSpeech.QUEUE_ADD, null);
+}
+
+
+// 连接图片
+library.连接图片 = function(path, 漫画文件夹名, 保存的漫画路径) {
+    //获取目录下所有文件与文件夹并整合为数组
+    var data = this.getFilesFromPath(path);
+    log("data= " + data);
+
+    for (var i = 1; i < data.length; i++) {
+        let w = i - 1;
+        console.log("循环次数i= " + i + "\n合成图片张数：" + w);
+
+        var 图片路径1 = "/storage/emulated/0/脚本/漫画集/" + 漫画文件夹名 + "/" + i + "." + "jpg";
+        var t = i + 1;
+        var 图片路径2 = "/storage/emulated/0/脚本/漫画集/" + 漫画文件夹名 + "/" + t + "." + "jpg";
+        if (files.isFile(图片路径1)) {
+            if (i == 1) {
+                var img1 = images.read(图片路径1);
+            } else {
+                var img1 = img;
+            }
+            var img2 = images.read(图片路径1);
+
+            //图片连接
+            var img = images.concat(img1, img2, "BOTTOM");
+
+        }
+    }
+
+    var 合并图片保存路径 = 保存的漫画路径 + "合成图片" + "." + "jpg";
+    alert("合并图片保存路径=" + 合并图片保存路径);
+    images.save(img, 合并图片保存路径, "jpg", 100); //保存图片
+    app.viewFile(合并图片保存路径); //查看合成图片
+}
+
+
+library.保存全屏截图 = function(imgPath) {
+    files.ensureDir(imgPath); //确保相关文件夹存在
+    images.save(captureScreen(), imgPath, "png", 100);
+    //app.viewFile(imgPath); //用其他应用查看
+}
+
+
+library.文本截取 = function(Condition, text) {
+    //截取某个字符串前面的内容：text.match(/(.*?)fff/)[1];
+    //截取某个字符串后面的内容：text.match(/aaa(.*?)/)[1];
+    //截取某个字符串中间的内容：text.match("^//newFile:(.*?)//");
+    //如果包括换行和空格的格式是：/function([\s\S]*)/  或者  "function([\\s\\S]*)"
+    if (typeof text == "string" && text.search(Condition) != -1) { //防报错
+        return text.match(Condition)[1];
+    }
+}
+
+
+library.定时停止脚本 = function(time) {
+    threads.start(function() {
+        log("定时停止脚本开始计时");
+        sleep(time);
+        console.hide();
+        home();
+        exit();
+    });
+}
+
+
+// 监听剪贴板内容(也就是说平时返回值都是undefined)
+/* 需要搭配使用，使用前一定要粘贴以下内容。
+    importClass(android.content.ClipData.Item);
+    var clip_Timestamp = null;
+ */
+library.getClipstr = function() {
+    var clipborad = context.getSystemService(context.CLIPBOARD_SERVICE);
+    var clip = clipborad.getPrimaryClip()
+    try {
+        //时间戳
+        if (clip_Timestamp != clip.getDescription().getTimestamp()) {
+            if (clip_Timestamp == null) {
+                //首次存储时间戳,下次进行比对
+                clip_Timestamp = clip.getDescription().getTimestamp()
+            } else {
+                var item = clip.getItemAt(0);
+                clip_Timestamp = clip.getDescription().getTimestamp()
+                item = clip.getItemAt(0)
+                // log(item.getText()) //获取剪贴板内容
+                var 剪贴板内容 = item.getText();
+                //进行发送
+                send_msg(item.getText())
+            }
+        }
+    } catch (e) {}
+    return 剪贴板内容;
+}
+
+//监听剪贴板内容(刷新界面实时返回剪贴板信息)
+library.clip_listener=function(time) {
+    importClass(android.os.Build);
+    var version = Build.VERSION.RELEASE;
+    //log("安卓版本号："+version);
+    var sum = threads.disposable(); //声明一个变量来接受 线程通讯返回的数据
+    if (version < 10) { //安卓10以下版本【推荐，不存在焦点抢占的情况】
+        this.getClipstr()
+    } else { //安卓10以上版本
+        var Thread = threads.start(function() {
+            time == undefined ? time = 4000 : null; //默认时间4秒
+            sleep(time);
+            var w = floaty.window(
+                <text />);
+            ui.run(function() {
+                w.requestFocus();
+                setTimeout(() => {
+                    //将计算好的结果通知主线程接收结果
+                    sum.setAndNotify(this.getClipstr());
+                    w.close();
+                }, 1200);
+            });
+        });
+    }
+    Thread.join();
+    return sum.blockedGet();
+}
+
 
 module.exports = library;
